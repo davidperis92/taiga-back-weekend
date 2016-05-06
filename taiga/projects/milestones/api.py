@@ -126,17 +126,23 @@ class MilestoneViewSet(HistoryResourceMixin, WatchedResourceMixin,
         current_date = milestone.estimated_start
         sumTotalPoints = sum(total_points.values())
         optimal_points = sumTotalPoints
-        milestone_days = (milestone.estimated_finish - milestone.estimated_start).days
-        optimal_points_per_day = sumTotalPoints / milestone_days if milestone_days else 0
+        days_list = []
 
         while current_date <= milestone.estimated_finish:
+            if current_date.weekday() not in (5,6):
+                days_list.append(current_date)
+            current_date = current_date + datetime.timedelta(days=1)
+
+        milestone_days = len(days_list)
+        optimal_points_per_day = sumTotalPoints / milestone_days if milestone_days else 0
+
+        for day in days_list:
             milestone_stats['days'].append({
-                'day': current_date,
-                'name': current_date.day,
-                'open_points':  sumTotalPoints - milestone.total_closed_points_by_date(current_date),
+                'day': day,
+                'name': day.day,
+                'open_points':  sumTotalPoints - milestone.total_closed_points_by_date(day),
                 'optimal_points': optimal_points,
             })
-            current_date = current_date + datetime.timedelta(days=1)
             optimal_points -= optimal_points_per_day
 
         return response.Ok(milestone_stats)
